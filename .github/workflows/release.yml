@@ -1,0 +1,56 @@
+name: release
+run-name: release ${{ inputs.version }}
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        required: true
+        type: string
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: jetpack-io/devbox-install-action@v0.7.0
+        with:
+          enable-cache: 'true'
+      - name: check version
+        run: .github/semver-check.sh ${{ inputs.version }}
+      - name: create release draft
+        uses: ncipollo/release-action@v1
+        with:
+          tag: v${{ inputs.version }}
+          name: ${{ inputs.version }}
+          draft: true
+      - name: set project version
+        run: .github/set-project-version.sh ${{ inputs.version }}
+      - name: install dependencies
+        run: devbox run install
+      - name: build release
+        run: devbox run build
+      - name: commit release version
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: '[skip ci] Set release version'
+          branch: main
+          file_pattern: 'browser-extension/package.json'
+      - name: Upload & release
+        uses: mnao305/chrome-extension-upload@v4.0.1
+        with:
+          file-path: browser-extension/dist/browser-copilot.zip
+          extension-id: cbhcdfecmeoaikjoapjkkpalaehmbogp
+          client-id: ${{ secrets.CLIENT_ID }}
+          client-secret: ${{ secrets.CLIENT_SECRET }}
+          refresh-token: ${{ secrets.REFRESH_TOKEN }}
+      - name: publish GH release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: v${{ inputs.version }}
+          allowUpdates: true
+          omitNameDuringUpdate: true
+          omitBodyDuringUpdate: true
+          updateOnlyUnreleased: true
+          draft: false
+          artifacts: "browser-extension/dist/browser-copilot.zip"
