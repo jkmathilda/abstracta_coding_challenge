@@ -3,7 +3,8 @@
     "nodejs@latest",
     "poetry@latest",
     "python3@latest",
-    "nodePackages.pnpm@latest"
+    "nodePackages.pnpm@latest",
+    "git@latest"
   ],
   "env": {
     "DEVBOX_PYPROJECT_DIR": "$PWD/agent-extended"
