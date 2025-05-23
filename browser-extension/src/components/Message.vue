@@ -11,7 +11,21 @@ import CopyButton from './CopyButton.vue'
 import * as echarts from 'echarts'
 import moment from 'moment'
 
-const props = defineProps<{ text: string, file: Record<string, string>, isUser: boolean, isComplete: boolean, isSuccess: boolean, agentLogo: string, agentName: string, agentId: string }>()
+const showSteps = ref(false)
+
+// const props = defineProps<{ text: string, file: Record<string, string>, isUser: boolean, isComplete: boolean, isSuccess: boolean, agentLogo: string, agentName: string, agentId: string }>()
+const props = defineProps<{
+  text: string,
+  file: Record<string, string>,
+  isUser: boolean,
+  isComplete: boolean,
+  isSuccess: boolean,
+  agentLogo: string,
+  agentName: string,
+  agentId: string,
+  steps?: string[]
+}>()
+const steps = computed(() => props.steps || [])
 const { t } = useI18n()
 const renderedMsg = computed(() => props.isUser ? props.text.replaceAll('\n', '<br/>') : renderMarkDown(props.text))
 const messageElement = ref<HTMLElement | null>(null);
@@ -141,6 +155,16 @@ onBeforeUnmount(() => {
           <div v-html="renderedMsg" ref="messageElement"
             class="flex flex-col text-sm font-light leading-tight gap-2 rendered-msg" />
         </template>
+        <template v-if="!isUser && steps && steps.length">
+          <button @click="showSteps = !showSteps" class="text-blue-600 text-sm mt-2 underline">
+            {{ showSteps ? 'Hide reasoning' : 'Show reasoning' }}
+          </button>
+
+          <ul v-if="showSteps" class="text-xs text-gray-600 mt-1 ml-2 list-disc">
+            <li v-for="(step, index) in steps" :key="index">{{ step }}</li>
+          </ul>
+        </template>
+
       </div>
       <div class="ml-3 dot-pulse" v-if="!isComplete" />
     </div>
