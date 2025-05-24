@@ -5,6 +5,7 @@ import logging
 import os
 from typing import List, AsyncIterator, Optional
 from pydantic import BaseModel
+import json
 
 from langchain.agents import Tool, OpenAIFunctionsAgent, AgentExecutor
 from langchain.callbacks import AsyncIteratorCallbackHandler
@@ -116,22 +117,59 @@ class Agent:
         ret = client.audio.transcriptions.create(model="whisper-1", file=open(audio_file_path, 'rb'),
                                                  language=language)
         return ret.text
-
+    
+    
     async def ask(self, question: str) -> AsyncIterator[AgentFlow | str]:
         callback = AsyncIteratorCallbackHandler()
-        task = asyncio.create_task(self._agent.arun(input=question, callbacks=[callback]))
-        resp = ""
+
+        system_instruction = (
+            "You are a reasoning assistant. Respond only with JSON like this:\n"
+            '{"steps": [{"action": "message", "value": "Step 1..."}, {"action": "message", "value": "Step 2..."}]}\n'
+            "Do not add any explanatory text or wrapping text."
+        )
+
+        task = asyncio.create_task(self._agent.arun(input=f"{system_instruction}\n\nUser: {question}", callbacks=[callback]))
+        streamed = ""
+
         async for token in callback.aiter():
-            resp += token
+            streamed += token
             yield token
-        ret = await task
-        # when using tools tokens are not passed to the callback handler, so we need to get the response directly from
-        # agent run call
-        if ret != resp:
-            if ret.startswith("{\"steps\":"):
-                try:
-                    yield AgentFlow.model_validate_json(ret)
-                except Exception as e:
-                    logging.exception("Error parsing agent response", e)
-                    yield ret
-            yield ret
+
+        final_response = await task
+
+        if final_response != streamed:
+            try:
+                # Try parsing normally
+                if isinstance(final_response, str) and final_response.strip().startswith("{\"steps\":"):
+                    try:
+                        parsed = json.loads(final_response)
+                        yield AgentFlow.model_validate(parsed)
+                    except json.JSONDecodeError:
+                        # Attempt to parse double-encoded JSON
+                        inner = json.loads(json.loads(f'"{final_response}"'))  # careful unescape
+                        yield AgentFlow.model_validate(inner)
+                else:
+                    yield AgentFlow.message(final_response)
+            except Exception as e:
+                logging.exception("Error parsing AgentFlow JSON", e)
+                yield "⚠️ I couldn't parse your reasoning steps."
+
+
+    # async def ask(self, question: str) -> AsyncIterator[AgentFlow | str]:
+    #     callback = AsyncIteratorCallbackHandler()
+    #     task = asyncio.create_task(self._agent.arun(input=question, callbacks=[callback]))
+    #     resp = ""
+    #     async for token in callback.aiter():
+    #         resp += token
+    #         yield token
+    #     ret = await task
+    #     # when using tools tokens are not passed to the callback handler, so we need to get the response directly from
+    #     # agent run call
+    #     if ret != resp:
+    #         if ret.startswith("{\"steps\":"):
+    #             try:
+    #                 yield AgentFlow.model_validate_json(ret)
+    #             except Exception as e:
+    #                 logging.exception("Error parsing agent response", e)
+    #                 yield ret
+    #         yield ret

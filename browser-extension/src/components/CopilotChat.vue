@@ -30,6 +30,13 @@ const adjustMessagesScroll = async () => {
 
 const onUserMessage = async (text: string, file: Record<string, string>) => {
   emit('userMessage', text, file)
+
+  // props.messages.push(ChatMessage.agentMessage("The time is 3:45 PM.", [
+  //   "Checking system clock...",
+  //   "Formatting time...",
+  //   "Sending response..."
+  // ]))
+
 }
 
 const lastMessage = computed((): ChatMessage => props.messages[props.messages.length - 1])
@@ -53,8 +60,8 @@ const lastMessage = computed((): ChatMessage => props.messages[props.messages.le
           <!-- <Message v-for="message in messages" :text="message.text" :file="message.file" :is-user="message.isUser"
             :is-complete="message.isComplete" :is-success="message.isSuccess" :agent-logo="agentLogo" :agent-name="agentName" :agent-id="agentId" /> -->
             <Message
-              v-for="message in messages"
-              :key="message.id"
+              v-for="(message, index) in messages"
+              :key="message.text + message.isUser + index"
               :text="message.text"
               :file="message.file"
               :is-user="message.isUser"
