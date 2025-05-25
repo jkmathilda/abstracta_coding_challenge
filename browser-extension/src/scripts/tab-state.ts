@@ -40,7 +40,7 @@ export class ChatMessage {
   }
 
   public static agentMessage(text?: string, steps?: string[]): ChatMessage {
-    const isComplete = (text !== undefined && text.length > 0) || (steps && steps.length > 0)
+    const isComplete = Boolean((text !== undefined && text.length > 0) || (steps && steps.length > 0))
     return new ChatMessage(text || '', {}, false, isComplete, true, steps)
   }
 
