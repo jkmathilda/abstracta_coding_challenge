@@ -4,6 +4,7 @@ Browser Copilot is a browser extension that allows you to use existing or custom
 
 ## My output
 <img width="1180" alt="Image" src="https://github.com/user-attachments/assets/f319a3ac-872c-4d34-b6b7-c83be92cc9d2" />
+Normally, you would ask questions about the web, but for testing purpose, asked general questions that requires steps to get final answer. 
 
 ## Development
 
