@@ -13,19 +13,50 @@ import moment from 'moment'
 
 const showSteps = ref(false)
 
+// const parsedSteps = computed(() => {
+//   if (steps.value.length > 0) return steps.value
+
+//   try {
+//     const parsed = JSON.parse(props.text)
+//     if (parsed.steps && Array.isArray(parsed.steps)) {
+//       return parsed.steps.map((s: any) => s.value || s)
+//     }
+//   } catch (e) {
+//     return []
+//   }
+//   return []
+// })
+
 const parsedSteps = computed(() => {
   if (steps.value.length > 0) return steps.value
 
   try {
     const parsed = JSON.parse(props.text)
     if (parsed.steps && Array.isArray(parsed.steps)) {
-      return parsed.steps.map((s: any) => s.value || s)
+      return parsed.steps.map((s: any) => s.value || s.description || s)
     }
   } catch (e) {
     return []
   }
   return []
 })
+
+// Add computed property to extract clean text
+const cleanText = computed(() => {
+  try {
+    const parsed = JSON.parse(props.text)
+    if (parsed.text && parsed.steps) {
+      return parsed.text
+    }
+  } catch (e) {
+    // If it's not JSON, return the original text
+    return props.text
+  }
+  return props.text
+})
+
+// Update the renderedMsg computed property
+const renderedMsg = computed(() => props.isUser ? cleanText.value.replaceAll('\n', '<br/>') : renderMarkDown(cleanText.value))
 
 // const props = defineProps<{ text: string, file: Record<string, string>, isUser: boolean, isComplete: boolean, isSuccess: boolean, agentLogo: string, agentName: string, agentId: string }>()
 const props = defineProps<{
@@ -41,7 +72,7 @@ const props = defineProps<{
 }>()
 const steps = computed(() => props.steps || [])
 const { t } = useI18n()
-const renderedMsg = computed(() => props.isUser ? props.text.replaceAll('\n', '<br/>') : renderMarkDown(props.text))
+// const renderedMsg = computed(() => props.isUser ? props.text.replaceAll('\n', '<br/>') : renderMarkDown(props.text))
 const messageElement = ref<HTMLElement | null>(null);
 const resizeObserver: ResizeObserver = new ResizeObserver(onResize)
 var chart: any;
