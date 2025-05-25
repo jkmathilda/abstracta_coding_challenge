@@ -156,7 +156,18 @@ export class AgentSession {
         }
       }
 
-      msgHandler(JSON.stringify({ text: finalText, steps: collectedSteps }), true)
+      try {
+        const parsed = JSON.parse(finalText);
+        if (parsed.steps && Array.isArray(parsed.steps)) {
+          msgHandler(JSON.stringify({ text: "", steps: parsed.steps.map((s: any) => s.value) }), true);
+        } else {
+          msgHandler(JSON.stringify({ text: finalText, steps: [] }), true);
+        }
+      } catch (e) {
+        // fallback: just show the text
+        msgHandler(JSON.stringify({ text: finalText, steps: [] }), true);
+      }
+
 
     } catch (e) {
       errorHandler(e)
