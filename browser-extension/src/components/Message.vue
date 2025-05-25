@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, nextTick, ref, onMounted, onBeforeUnmount } from 'vue'
+import { computed, nextTick, ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import MarkdownIt from 'markdown-it'
 import hljs from 'highlight.js'
@@ -12,6 +12,20 @@ import * as echarts from 'echarts'
 import moment from 'moment'
 
 const showSteps = ref(false)
+
+const parsedSteps = computed(() => {
+  if (steps.value.length > 0) return steps.value
+
+  try {
+    const parsed = JSON.parse(props.text)
+    if (parsed.steps && Array.isArray(parsed.steps)) {
+      return parsed.steps.map((s: any) => s.value || s)
+    }
+  } catch (e) {
+    return []
+  }
+  return []
+})
 
 // const props = defineProps<{ text: string, file: Record<string, string>, isUser: boolean, isComplete: boolean, isSuccess: boolean, agentLogo: string, agentName: string, agentId: string }>()
 const props = defineProps<{
@@ -155,13 +169,14 @@ onBeforeUnmount(() => {
           <div v-html="renderedMsg" ref="messageElement"
             class="flex flex-col text-sm font-light leading-tight gap-2 rendered-msg" />
         </template>
-        <template v-if="!isUser && steps && steps.length">
+        <!-- <template v-if="!isUser && steps && steps.length"> -->
+        <template v-if="!isUser && parsedSteps.length">
           <button @click="showSteps = !showSteps" class="text-blue-600 text-sm mt-2 underline">
             {{ showSteps ? 'Hide reasoning' : 'Show reasoning' }}
           </button>
 
           <ul v-if="showSteps" class="text-xs text-gray-600 mt-1 ml-2 list-disc">
-            <li v-for="(step, index) in steps" :key="index">{{ step }}</li>
+            <li v-for="(step, index) in parsedSteps" :key="index">{{ step }}</li>
           </ul>
         </template>
 

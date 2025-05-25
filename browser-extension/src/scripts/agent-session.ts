@@ -138,6 +138,42 @@ export class AgentSession {
     }
   }
 
+  // public async processUserMessage(text: string, file: Record<string, string>, msgHandler: (text: string, complete: boolean) => void, errorHandler: (error: any) => void) {
+  //   try {
+  //     if (file.data) {
+  //       text = await this.agent.transcriptAudio(file.data, this.id!, this.authService);
+  //     }
+  //     const ret = this.agent.ask(text, this.id!, this.authService)
+  //     let finalText = ""
+  //     let collectedSteps: string[] = []
+
+  //     for await (const part of ret) {
+  //       if (typeof part === "string") {
+  //         finalText += part
+  //       } else {
+  //         collectedSteps.push(...part.steps.map((s: any) => s.description || JSON.stringify(s)))
+  //         await new FlowExecutor(this.tabId, msgHandler).runFlow(part.steps)
+  //       }
+  //     }
+
+  //     try {
+  //       const parsed = JSON.parse(finalText);
+  //       if (parsed.steps && Array.isArray(parsed.steps)) {
+  //         msgHandler(JSON.stringify({ text: "", steps: parsed.steps.map((s: any) => s.value) }), true);
+  //       } else {
+  //         msgHandler(JSON.stringify({ text: finalText, steps: [] }), true);
+  //       }
+  //     } catch (e) {
+  //       // fallback: just show the text
+  //       msgHandler(JSON.stringify({ text: finalText, steps: [] }), true);
+  //     }
+
+
+  //   } catch (e) {
+  //     errorHandler(e)
+  //   }
+  // }
+
   public async processUserMessage(text: string, file: Record<string, string>, msgHandler: (text: string, complete: boolean) => void, errorHandler: (error: any) => void) {
     try {
       if (file.data) {
@@ -158,16 +194,29 @@ export class AgentSession {
 
       try {
         const parsed = JSON.parse(finalText);
+        
         if (parsed.steps && Array.isArray(parsed.steps)) {
-          msgHandler(JSON.stringify({ text: "", steps: parsed.steps.map((s: any) => s.value) }), true);
+          // Extract reasoning steps
+          const reasoningSteps = parsed.steps.map((s: any) => s.value || s.description || s);
+          
+          // The answer is typically in the last reasoning step
+          // For your format, the last step usually contains the conclusion/answer
+          const lastStep = parsed.steps[parsed.steps.length - 1];
+          const answerText = lastStep?.value || reasoningSteps[reasoningSteps.length - 1] || "Answer provided in reasoning steps.";
+          
+          msgHandler(JSON.stringify({ 
+            text: answerText, 
+            steps: reasoningSteps 
+          }), true);
         } else {
+          // Fallback for non-reasoning responses
           msgHandler(JSON.stringify({ text: finalText, steps: [] }), true);
         }
+        
       } catch (e) {
         // fallback: just show the text
         msgHandler(JSON.stringify({ text: finalText, steps: [] }), true);
       }
-
 
     } catch (e) {
       errorHandler(e)

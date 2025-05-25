@@ -39,8 +39,13 @@ export class ChatMessage {
     return new ChatMessage(text, file, true, true, true)
   }
 
+  // public static agentMessage(text?: string, steps?: string[]): ChatMessage {
+  //   return new ChatMessage(text || '', {}, false, text !== undefined, true, steps)
+  // }
+
   public static agentMessage(text?: string, steps?: string[]): ChatMessage {
-    return new ChatMessage(text || '', {}, false, text !== undefined, true, steps)
+    const isComplete = (text !== undefined && text.length > 0) || (steps && steps.length > 0)
+    return new ChatMessage(text || '', {}, false, isComplete, true, steps)
   }
 
   public static agentErrorMessage(text: string): ChatMessage {
