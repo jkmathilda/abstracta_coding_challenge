@@ -138,42 +138,11 @@ export class AgentSession {
     }
   }
 
-  // public async processUserMessage(text: string, file: Record<string, string>, msgHandler: (text: string, complete: boolean) => void, errorHandler: (error: any) => void) {
-  //   try {
-  //     if (file.data) {
-  //       text = await this.agent.transcriptAudio(file.data, this.id!, this.authService);
-  //     }
-  //     const ret = this.agent.ask(text, this.id!, this.authService)
-  //     let finalText = ""
-  //     let collectedSteps: string[] = []
-
-  //     for await (const part of ret) {
-  //       if (typeof part === "string") {
-  //         finalText += part
-  //       } else {
-  //         collectedSteps.push(...part.steps.map((s: any) => s.description || JSON.stringify(s)))
-  //         await new FlowExecutor(this.tabId, msgHandler).runFlow(part.steps)
-  //       }
-  //     }
-
-  //     msgHandler(JSON.stringify({ text: finalText, steps: collectedSteps }), true)
-
-  //   } catch (e) {
-  //     errorHandler(e)
-  //   }
-  // }
-
-  public async processUserMessage(
-    text: string,
-    file: Record<string, string>,
-    msgHandler: (text: string, complete: boolean) => void,
-    errorHandler: (error: any) => void
-  ) {
+  public async processUserMessage(text: string, file: Record<string, string>, msgHandler: (text: string, complete: boolean) => void, errorHandler: (error: any) => void) {
     try {
       if (file.data) {
-        text = await this.agent.transcriptAudio(file.data, this.id!, this.authService)
+        text = await this.agent.transcriptAudio(file.data, this.id!, this.authService);
       }
-
       const ret = this.agent.ask(text, this.id!, this.authService)
       let finalText = ""
       let collectedSteps: string[] = []
@@ -182,21 +151,17 @@ export class AgentSession {
         if (typeof part === "string") {
           finalText += part
         } else {
-          const stepMessages = part.steps.map((s) => s.value || JSON.stringify(s))
-          collectedSteps.push(...stepMessages)
+          collectedSteps.push(...part.steps.map((s: any) => s.description || JSON.stringify(s)))
           await new FlowExecutor(this.tabId, msgHandler).runFlow(part.steps)
         }
       }
 
-      // Instead of sending it as a single stringified JSON, send as plain string and step array
-      msgHandler(finalText, false)
-      msgHandler(JSON.stringify({ steps: collectedSteps }), true)
+      msgHandler(JSON.stringify({ text: finalText, steps: collectedSteps }), true)
 
     } catch (e) {
       errorHandler(e)
     }
   }
-
 
 
   public async resumeFlow(msgHandler: (text: string, complete: boolean) => void, errorHandler: (error: any) => void) {
