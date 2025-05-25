@@ -117,43 +117,6 @@ class Agent:
         ret = client.audio.transcriptions.create(model="whisper-1", file=open(audio_file_path, 'rb'),
                                                  language=language)
         return ret.text
-    
-    
-    # async def ask(self, question: str) -> AsyncIterator[AgentFlow | str]:
-    #     callback = AsyncIteratorCallbackHandler()
-
-    #     system_instruction = (
-    #         "You are a reasoning assistant. Respond only with JSON like this:\n"
-    #         '{"steps": [{"action": "message", "value": "Step 1..."}, {"action": "message", "value": "Step 2..."}]}\n'
-    #         "Do not add any explanatory text or wrapping text."
-    #     )
-
-    #     task = asyncio.create_task(self._agent.arun(input=f"{system_instruction}\n\nUser: {question}", callbacks=[callback]))
-    #     streamed = ""
-
-    #     async for token in callback.aiter():
-    #         streamed += token
-    #         yield token
-
-    #     final_response = await task
-
-    #     if final_response != streamed:
-    #         try:
-    #             # Try parsing normally
-    #             if isinstance(final_response, str) and final_response.strip().startswith("{\"steps\":"):
-    #                 try:
-    #                     parsed = json.loads(final_response)
-    #                     yield AgentFlow.model_validate(parsed)
-    #                 except json.JSONDecodeError:
-    #                     # Attempt to parse double-encoded JSON
-    #                     inner = json.loads(json.loads(f'"{final_response}"'))  # careful unescape
-    #                     yield AgentFlow.model_validate(inner)
-    #             else:
-    #                 yield AgentFlow.message(final_response)
-    #         except Exception as e:
-    #             logging.exception("Error parsing AgentFlow JSON", e)
-    #             yield "⚠️ I couldn't parse your reasoning steps."
-
 
     async def ask(self, question: str) -> AsyncIterator[AgentFlow | str]:
         callback = AsyncIteratorCallbackHandler()

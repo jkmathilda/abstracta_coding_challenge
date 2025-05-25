@@ -30,13 +30,6 @@ const adjustMessagesScroll = async () => {
 
 const onUserMessage = async (text: string, file: Record<string, string>) => {
   emit('userMessage', text, file)
-
-  // props.messages.push(ChatMessage.agentMessage("The time is 3:45 PM.", [
-  //   "Checking system clock...",
-  //   "Formatting time...",
-  //   "Sending response..."
-  // ]))
-
 }
 
 const lastMessage = computed((): ChatMessage => props.messages[props.messages.length - 1])
