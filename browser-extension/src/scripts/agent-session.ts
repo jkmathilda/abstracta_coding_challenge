@@ -212,24 +212,21 @@ export class AgentSession {
           // Extract reasoning steps
           const reasoningSteps = parsed.steps.map((s: any) => s.value || s.description || s);
           
-          // The answer is typically in the last reasoning step
-          // For your format, the last step usually contains the conclusion/answer
-          const lastStep = parsed.steps[parsed.steps.length - 1];
-          const answerText = lastStep?.value || reasoningSteps[reasoningSteps.length - 1] || "Answer provided in reasoning steps.";
+          // Use the provided text as the answer, not the last step
+          const answerText = parsed.text || "No answer provided";
           
-          // Pass the complete JSON so Vue component can extract both text and steps
           msgHandler(JSON.stringify({ 
             text: answerText, 
             steps: reasoningSteps 
           }), true);
         } else {
           // Fallback for non-reasoning responses
-          msgHandler(finalText, true);
+          msgHandler(JSON.stringify({ text: finalText, steps: [] }), true);
         }
         
       } catch (e) {
         // fallback: just show the text
-        msgHandler(finalText, true);
+        msgHandler(JSON.stringify({ text: finalText, steps: [] }), true);
       }
 
     } catch (e) {

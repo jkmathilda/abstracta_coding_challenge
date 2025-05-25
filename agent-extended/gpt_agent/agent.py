@@ -119,12 +119,49 @@ class Agent:
         return ret.text
     
     
+    # async def ask(self, question: str) -> AsyncIterator[AgentFlow | str]:
+    #     callback = AsyncIteratorCallbackHandler()
+
+    #     system_instruction = (
+    #         "You are a reasoning assistant. Respond only with JSON like this:\n"
+    #         '{"steps": [{"action": "message", "value": "Step 1..."}, {"action": "message", "value": "Step 2..."}]}\n'
+    #         "Do not add any explanatory text or wrapping text."
+    #     )
+
+    #     task = asyncio.create_task(self._agent.arun(input=f"{system_instruction}\n\nUser: {question}", callbacks=[callback]))
+    #     streamed = ""
+
+    #     async for token in callback.aiter():
+    #         streamed += token
+    #         yield token
+
+    #     final_response = await task
+
+    #     if final_response != streamed:
+    #         try:
+    #             # Try parsing normally
+    #             if isinstance(final_response, str) and final_response.strip().startswith("{\"steps\":"):
+    #                 try:
+    #                     parsed = json.loads(final_response)
+    #                     yield AgentFlow.model_validate(parsed)
+    #                 except json.JSONDecodeError:
+    #                     # Attempt to parse double-encoded JSON
+    #                     inner = json.loads(json.loads(f'"{final_response}"'))  # careful unescape
+    #                     yield AgentFlow.model_validate(inner)
+    #             else:
+    #                 yield AgentFlow.message(final_response)
+    #         except Exception as e:
+    #             logging.exception("Error parsing AgentFlow JSON", e)
+    #             yield "⚠️ I couldn't parse your reasoning steps."
+
+
     async def ask(self, question: str) -> AsyncIterator[AgentFlow | str]:
         callback = AsyncIteratorCallbackHandler()
 
         system_instruction = (
             "You are a reasoning assistant. Respond only with JSON like this:\n"
-            '{"steps": [{"action": "message", "value": "Step 1..."}, {"action": "message", "value": "Step 2..."}]}\n'
+            '{"text": "Your final answer here", "steps": [{"action": "message", "value": "Step 1..."}, {"action": "message", "value": "Step 2..."}]}\n'
+            "The 'text' field should contain your final, concise answer. The 'steps' field should contain your reasoning process.\n"
             "Do not add any explanatory text or wrapping text."
         )
 
@@ -140,36 +177,24 @@ class Agent:
         if final_response != streamed:
             try:
                 # Try parsing normally
-                if isinstance(final_response, str) and final_response.strip().startswith("{\"steps\":"):
+                if isinstance(final_response, str) and (final_response.strip().startswith("{\"steps\":") or final_response.strip().startswith("{\"text\":")):
                     try:
                         parsed = json.loads(final_response)
-                        yield AgentFlow.model_validate(parsed)
+                        # If it has both text and steps, yield as AgentFlow
+                        if "steps" in parsed:
+                            yield AgentFlow.model_validate(parsed)
+                        else:
+                            # Fallback for responses without steps
+                            yield AgentFlow.message(parsed.get("text", final_response))
                     except json.JSONDecodeError:
                         # Attempt to parse double-encoded JSON
-                        inner = json.loads(json.loads(f'"{final_response}"'))  # careful unescape
-                        yield AgentFlow.model_validate(inner)
+                        try:
+                            inner = json.loads(json.loads(f'"{final_response}"'))  # careful unescape
+                            yield AgentFlow.model_validate(inner)
+                        except:
+                            yield AgentFlow.message(final_response)
                 else:
                     yield AgentFlow.message(final_response)
             except Exception as e:
                 logging.exception("Error parsing AgentFlow JSON", e)
                 yield "⚠️ I couldn't parse your reasoning steps."
-
-
-    # async def ask(self, question: str) -> AsyncIterator[AgentFlow | str]:
-    #     callback = AsyncIteratorCallbackHandler()
-    #     task = asyncio.create_task(self._agent.arun(input=question, callbacks=[callback]))
-    #     resp = ""
-    #     async for token in callback.aiter():
-    #         resp += token
-    #         yield token
-    #     ret = await task
-    #     # when using tools tokens are not passed to the callback handler, so we need to get the response directly from
-    #     # agent run call
-    #     if ret != resp:
-    #         if ret.startswith("{\"steps\":"):
-    #             try:
-    #                 yield AgentFlow.model_validate_json(ret)
-    #             except Exception as e:
-    #                 logging.exception("Error parsing agent response", e)
-    #                 yield ret
-    #         yield ret
